@@ -1,0 +1,79 @@
+System-Level Metrics Profiler
+=============================
+Author: Ignacio Laguna
+Contact: ilaguna@purdue.edu
+
+This python scripts collects performance measurements from a running program
+(i.e. a Linux process) and save them in a file. Measurements are collected
+using the 'sysstat' utility, so the script assumes that this utility is
+accessible via the executable search path (i.e via the $PATH environment
+variable). To install 'sysstat' see:
+http://sebastien.godard.pagesperso-orange.fr/
+
+How to run it
+-------------
+For help on running the script, execute:
+
+$ ./profiler.py --help
+
+You should see the following output:
+
+Usage: profiler.py [options] PID
+
+Options:
+  -h, --help            show this help message and exit
+  -s RATE, --sampling-rate=RATE
+                        Sampling rate (seconds). Default is 5 sec.
+  -d DIR, --dir=DIR     Output directory
+  -n NUM, --samples-number=NUM
+                        Number of samples. Default is 10.
+
+About options
+-------------
+The sampling rate should be a minimum of 1 (second); the default is 5 seconds.
+If the output directory is not specified, the script will save measurements by
+default in the 'output' directory in the current path; this directory will be
+created if it doesn't exist. The number of samples will depend on the amount of
+time your program runs and the sampling rate. If this is not known in advance,
+simply specify a large number of samples; the script should end when the main
+program terminates.
+
+Output
+------
+The script will save measurements in files with the following name:
+[timestamp]_[pid].dat
+where 'timestamp' is the current time and 'pid' is the process id of the
+executed program. If the program creates child processes their measurements
+should be saved in different files (with different pid).
+
+Example
+-------
+In the following example we use the profiler to get measurements of the 'find'
+program in Linux:
+
+$ ./profiler.py -s 1 -n 1000 "find /usr -name data.txt"
+[PROFILER]: Calling main program...
+[PROFILER]: Main program has PID 3484
+......
+[PROFILER]: Main program is done.
+[PROFILER]: Saving data in files...
+
+Now we list the saved files:
+
+$ ls ./output/
+1338240428_3484.dat
+
+Then we can see some of the saved data:
+
+$ head ./output/1338240428_3484.dat 
+Time,PID,%usr,%system,%guest,%CPU,CPU,minflt/s,majflt/s,VSZ,RSS,%MEM,StkSize,
+StkRef,kB_rd/s,kB_wr/s,kB_ccwr/s,cswch/s,nvcswch/s,Command,FDs,NumThreads,
+1338240333,3484,1.00,2.00,0.00,0.74,2,135.00,0.00,112960,1756,0.05,140,20,1404.
+00,0.00,0.00,193.00,15.00,find,7,1,
+1338240334,3484,2.00,3.00,0.00,1.23,2,0.00,0.00,112960,1756,0.05,140,20,2732.00,
+0.00,0.00,405.00,19.00,find,6,1,
+1338240335,3484,1.00,3.00,0.00,1.00,2,9.00,0.00,112960,1756,0.05,140,24,2516.00,
+0.00,0.00,350.00,14.00,find,7,1,
+
+Notice that data is comma separated and that the first row corresponds to the
+name of the performance metrics.
