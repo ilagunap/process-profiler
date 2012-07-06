@@ -5,13 +5,14 @@ import os
 import subprocess
 import sys
 import time
+import socket
 
 ###############################################################################
 # Helper functions                                                            #
 ###############################################################################
 
 def parseOptions():
-    usage = "usage: %prog [options] PID"
+    usage = "usage: %prog [options] [program]"
     parser = optparse.OptionParser(usage)
     
     parser.add_option("-s", "--sampling-rate", dest="rate", 
@@ -20,9 +21,11 @@ def parseOptions():
                       help="Output directory", metavar="DIR")
     parser.add_option("-n", "--samples-number", dest="num", 
                       help="Number of samples. Default is 10.")
+    parser.add_option("-p", "--pid", dest="PID",
+                      help="Process ID.")
     
     (options, args) = parser.parse_args()
-    if len(args) == 0:
+    if len(args) > 1:
         parser.print_help()
         exit()
         
@@ -34,6 +37,17 @@ def getSamplingRate(options):
     else:
         rate = options.rate
     return rate
+
+def getProcessID(options):
+    if options.PID is None:
+        pid = 0
+    else:
+        pid = options.PID
+    
+    return pid
+        
+def processExist(pid):
+    return os.path.exists("/proc/" + str(pid))
 
 def getNumberOfSamples(options):
     if options.num is None:
@@ -131,25 +145,39 @@ dir = getOutputDirectory(options)
 numberOfSamples = getNumberOfSamples(options)
 features = getFeatures()
 
+pid = getProcessID(options)
+if (pid != 0):
+    mode = "ATTACH_PROCESS"
+else:
+    mode = "CREATE_PROCESS"
+
 # Call target program
-argsList = args[0].split()
-log('Calling main program...')
-program = subprocess.Popen(argsList)
-log('Main program has PID ' + str(program.pid))
+if mode is "CREATE_PROCESS":
+    argsList = args[0].split()
+    log('Calling main program...')
+    program = subprocess.Popen(argsList)
+    pid = str(program.pid)
+    log('Main program has PID ' + pid)
+else:
+    log('Program has PID ' + pid)
 
 # Data hash table. Keys: pids; Values: lists of metric values.
 data = {}
 
 # Get samples
 for n in range(numberOfSamples):
-    program.poll()
-    if program.returncode != None:
-        break
+    if mode is "CREATE_PROCESS":
+        program.poll()
+        if program.returncode != None:
+            break
+    else:
+        if not processExist(pid):
+            break
     
-    valuesList = getMetrics(program.pid)
-    saveMetricValues(program.pid, data, valuesList)
+    valuesList = getMetrics(pid)
+    saveMetricValues(pid, data, valuesList)
     
-    listOfChilds = getChilds(str(program.pid))
+    listOfChilds = getChilds(pid)
     if len(listOfChilds) != 0:
         for c in listOfChilds:
             valuesList = getMetrics(c)
@@ -158,15 +186,16 @@ for n in range(numberOfSamples):
     time.sleep(float(rate)-1)
 
 # Wait until the program finishes
-program.wait()
-log('Main program is done.')
+if mode is "CREATE_PROCESS":
+    program.wait()
+    log('Main program is done.')
 
 # Save data into files
 log('Saving data in files...')
 if not os.path.exists(dir):
     os.makedirs(dir)
 for pid in data.keys():
-    fileName = str(time.time()).split('.')[0] + '_' + str(pid) + '.dat'
+    fileName = str(time.time()).split('.')[0] + '_' + str(pid) + '_' + socket.gethostname() +'.dat'
     file = open(os.path.join(dir, fileName),'w')
     for f in features:
         file.write(f + ',')

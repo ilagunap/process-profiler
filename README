@@ -18,7 +18,7 @@ $ ./profiler.py --help
 
 You should see the following output:
 
-Usage: profiler.py [options] PID
+Usage: profiler.py [options] [program]
 
 Options:
   -h, --help            show this help message and exit
@@ -27,6 +27,19 @@ Options:
   -d DIR, --dir=DIR     Output directory
   -n NUM, --samples-number=NUM
                         Number of samples. Default is 10.
+  -p PID, --pid=PID     Process ID.
+
+
+Operation modes
+---------------
+There are two operation modes:
+(a)  Using an already existing process (with the '-p' option)
+(b)  Creating the program to monitor (by passing the program as an argument)
+
+Mode (a) has precedence over (b), i.e. if '-p' is used, a program passed as
+an argument will not be created (and it will only monitor the process with the
+PID passed with '-p'). If '-p' is not used, you must pass the program to monitor
+as an argument.
 
 About options
 -------------
