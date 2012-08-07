@@ -1,0 +1,19 @@
+README
+======
+Author: Ignacio Laguna
+Date: Aug/7/2012
+
+Requirements:
+-------------
+- JDK 1.6.x
+
+Configuration variables:
+------------------------
+- Make sure that the 'LD_LIBRARY_PATH' enviroment variable contains a path to 
+the 'c++_code' directory where the libprocessinfo.so library is located. This
+library has been compiled for x86_64 (under Linux 2.6.34.7-63). If you have a
+different architecture this will not work.
+
+-
+
+

@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+Premain-Class: com.ilaguna.metrics.ProfilerMain
+Boot-Class-Path: ../javaassist/javassist-3.16.1-GA/javassist.jar
+
