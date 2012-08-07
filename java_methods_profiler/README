@@ -14,6 +14,19 @@ the 'c++_code' directory where the libprocessinfo.so library is located. This
 library has been compiled for x86_64 (under Linux 2.6.34.7-63). If you have a
 different architecture this will not work.
 
--
+- Set the environment variable 'PROFILE_PATTERN' to the Java package you want 
+monitor. For example by:
+export PROFILE_PATTERN=com.ilaguna.test 
+
+Configuration with Ant:
+-----------------------
+- Set argument for the JVM:
+<jvmarg value="-javaagent:/path/bin/metricscollector.jar" />
+
+- Set classpath for Javaassist:
+<classpath>
+<pathelement location="/projects/hadoop_bugs/java_profiler/javaassist/javassist-3.16.1-GA/javassist.jar" />
+</classpath>
+
 
 
