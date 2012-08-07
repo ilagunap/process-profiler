@@ -18,8 +18,8 @@ different architecture this will not work.
 monitor. For example by:
 export PROFILE_PATTERN=com.ilaguna.test 
 
-Configuration with Ant:
------------------------
+Configuration with Ant in the build.xml file:
+---------------------------------------------
 - Set argument for the JVM:
 <jvmarg value="-javaagent:/path/bin/metricscollector.jar" />
 
@@ -27,6 +27,9 @@ Configuration with Ant:
 <classpath>
 <pathelement location="/projects/hadoop_bugs/java_profiler/javaassist/javassist-3.16.1-GA/javassist.jar" />
 </classpath>
+
+- Set the environment variable 'PROFILE_PATTERN'
+<env key="PROFILE_PATTERN" value="org.apache.hadoop.dfs"/>
 
 
 
