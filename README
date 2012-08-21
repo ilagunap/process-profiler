@@ -6,8 +6,9 @@ Contact: ilaguna@purdue.edu
 This python program collects multiple performance measurements from a running 
 program (i.e. a Linux process) and save them in a file. It collects a variety of
 metrics such as CPU and memory related metrics, I/O, scheduling and network 
-metrics. Measurements are saved in files for each process ID; i.e., a file for
-the parent process and all the child processes that the parent process creates.
+metrics. Measurements are saved in different files for each process ID, i.e., a 
+file for the parent process and files for all the child processes (that the 
+parent process creates).
 
 The collected measurements can be used to locate performance bugs using 
 statistical methods.
