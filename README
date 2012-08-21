@@ -1,34 +1,33 @@
-System-Level Metrics Profiler
-=============================
+Multidimensional Profiler (mprofiler)
+=====================================
 Author: Ignacio Laguna
 Contact: ilaguna@purdue.edu
 
-This python scripts collects performance measurements from a running program
-(i.e. a Linux process) and save them in a file. Measurements are collected
-using the 'sysstat' utility, so the script assumes that this utility is
-accessible via the executable search path (i.e via the $PATH environment
-variable). To install 'sysstat' see:
-http://sebastien.godard.pagesperso-orange.fr/
+This python program collects multiple performance measurements from a running 
+program (i.e. a Linux process) and save them in a file. It collects a variety of
+metrics such as CPU and memory related metrics, I/O, scheduling and network 
+metrics. Measurements are saved in files for each process ID; i.e., a file for
+the parent process and all the child processes that the parent process creates.
+
+The collected measurements can be used to locate performance bugs using 
+statistical methods.
 
 How to run it
 -------------
 For help on running the script, execute:
 
-$ ./profiler.py --help
-
-You should see the following output:
-
-Usage: profiler.py [options] [program]
+$ ./mprofiler.py --help
+Usage: mprofiler.py [options] [program]
 
 Options:
   -h, --help            show this help message and exit
   -s RATE, --sampling-rate=RATE
-                        Sampling rate (seconds). Default is 5 sec.
-  -d DIR, --dir=DIR     Output directory
+                        Sampling rate (seconds). Default is 5 seconds.
+  -d DIR, --dir=DIR     Output directory.
   -n NUM, --samples-number=NUM
                         Number of samples. Default is 10.
   -p PID, --pid=PID     Process ID.
-
+  -i NIC, --nic=NIC     Network interface card (NIC). Default is 'eth0'.
 
 Operation modes
 ---------------
@@ -39,25 +38,25 @@ There are two operation modes:
 Mode (a) has precedence over (b), i.e. if '-p' is used, a program passed as
 an argument will not be created (and it will only monitor the process with the
 PID passed with '-p'). If '-p' is not used, you must pass the program to monitor
-as an argument.
+as an argument. See the example below for mode (b).
 
 About options
 -------------
 The sampling rate should be a minimum of 1 (second); the default is 5 seconds.
 If the output directory is not specified, the script will save measurements by
 default in the 'output' directory in the current path; this directory will be
-created if it doesn't exist. The number of samples will depend on the amount of
-time your program runs and the sampling rate. If this is not known in advance,
-simply specify a large number of samples; the script should end when the main
-program terminates.
+created if it does not exist. The number of samples will depend on the amount of
+time your program runs and the sampling rate. If the run time not known in 
+advance, simply specify a large number of samples; the script should end when 
+the main program terminates.
 
 Output
 ------
 The script will save measurements in files with the following name:
-[timestamp]_[pid].dat
+[timestamp]_[pid]_[hostname].dat
 where 'timestamp' is the current time and 'pid' is the process id of the
-executed program. If the program creates child processes their measurements
-should be saved in different files (with different pid).
+executed program. If the program creates child processes, their measurements
+will be saved in different files (with different pid).
 
 Example
 -------
@@ -79,14 +78,49 @@ $ ls ./output/
 Then we can see some of the saved data:
 
 $ head ./output/1338240428_3484.dat 
-Time,PID,%usr,%system,%guest,%CPU,CPU,minflt/s,majflt/s,VSZ,RSS,%MEM,StkSize,
-StkRef,kB_rd/s,kB_wr/s,kB_ccwr/s,cswch/s,nvcswch/s,Command,FDs,NumThreads,
-1338240333,3484,1.00,2.00,0.00,0.74,2,135.00,0.00,112960,1756,0.05,140,20,1404.
-00,0.00,0.00,193.00,15.00,find,7,1,
-1338240334,3484,2.00,3.00,0.00,1.23,2,0.00,0.00,112960,1756,0.05,140,20,2732.00,
-0.00,0.00,405.00,19.00,find,6,1,
-1338240335,3484,1.00,3.00,0.00,1.00,2,9.00,0.00,112960,1756,0.05,140,24,2516.00,
-0.00,0.00,350.00,14.00,find,7,1,
+Timestamp,PID,minflt,majflt,utime,stime,num_threads,vsize,rss,processor,
+stack_size,rchar,wchar,read_bytes,write_bytes,canceled_write_bytes,
+num_file_desc,nicRcvBytes,nicRcvPckts,nicSentBytes,nicSentPckts,
+IPInTruncatedPkts,IPInOctets,IPOutOctets,
+1345568734,6341,519,0,0,0,1,114860032,242,2,140488002908144,9027,0,0,0,0,6,
+67765628,75127,5919958,29581,0,66161975,5682077,
+1345568735,6341,735,0,5,6,1,114913280,309,2,140488003109355,9027,108,933888,0,0,
+7,67765930,75129,5919958,29581,0,66162249,5682077,
+1345568736,6341,760,0,7,12,1,115015680,324,2,140488003109355,9027,108,3342336,0,
+0,7,67766736,75133,5923862,29586,0,66162999,5685911,
+
 
 Notice that data is comma separated and that the first row corresponds to the
 name of the performance metrics.
+
+Metric descriptions
+-------------------
+Timestamp:  timestamp of the measrument
+PID: process id
+minflt: minor page faults
+majflt: major page faults
+utime: user-level CPU time
+stime: system-level CPU time
+num_threads: number of threads
+vsize: virtual memory size
+rss: RAM memory
+processor: processor id the process is currently running at
+stack_size: size of the stack
+rchar: read characters
+wchar: written characters
+read_bytes: read bytes
+write_bytes: written bytes
+canceled_write_bytes: canceled written bytes
+num_file_desc: nmber of open file descriptors (including sockets)
+nicRcvBytes: received bytes from NIC
+nicRcvPckts: received packets from NIC
+nicSentBytes: sent bytes from NIC
+nicSentPckts: sent packets from NIC
+IPInTruncatedPkts: truncated IP packets
+IPInOctets: received IP octets
+IPOutOctets: sent IP octets
+
+Bugs
+----
+Please report bugs to ilagunap@gmail.com
+
