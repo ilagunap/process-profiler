@@ -1,7 +1,7 @@
 Multidimensional Profiler (mprofiler)
 =====================================
 Author: Ignacio Laguna
-Contact: ilaguna@purdue.edu
+Contact: ilagunap@gmail.com
 
 This python program collects multiple performance measurements from a running 
 program (i.e. a Linux process) and save them in a file. It collects a variety of
