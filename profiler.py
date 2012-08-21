@@ -1,5 +1,22 @@
 #!/usr/bin/env python
 
+# (C) 2011-2012 by Ignacio Laguna (ilagunap@gmail.com)
+#
+# ---------------------------------------------------------------------------
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# ---------------------------------------------------------------------------
+
 import optparse
 import os
 import subprocess
@@ -73,12 +90,57 @@ def getChilds(pid):
         lines.append(int(l[:-1]))
     return lines
 
-def getSysStatMetrics(pid):
-    cmd = ['pidstat','-p',str(pid),'-h','-d','-u','-I','-r','-s','-w','1','1']
-    out = subprocess.Popen(cmd,stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    lines = out.stdout.readlines()
-    values = lines[len(lines)-1].split() # get last value
-    return values
+#def getSysStatMetrics(pid):
+#    cmd = ['pidstat','-p',str(pid),'-h','-d','-u','-I','-r','-s','-w','1','1']
+#    out = subprocess.Popen(cmd,stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+#    lines = out.stdout.readlines()
+#    values = lines[len(lines)-1].split() # get last value
+#    return values
+
+# Metrics names:
+# 10: minflt (minor faults) 
+# 12: majflt (major faults)
+# 14: utime (user-mode CPU time)
+# 15: stime (kernel-mode CPU time)
+# 20: num_threads
+# 23: vsize (virtual memory size)
+# 24: rss (RAM memory)
+# 28: startstack (address of bottom of the stack)
+# 30: kstkeip (current EIP; instruction pointer)
+# 39: processor (CPU number last executed on)
+metricsInStatFile = (10,12,14,15,20,23,24,28,30,39);
+
+def getStatFileMetrics(pid):
+    global metricsInStatFile
+    filename = os.path.join('/proc', str(pid), 'stat')
+    file = open(filename, 'r')
+    data = file.readlines()[-1:][0].split(" ")
+    ret = []
+    for m in metricsInStatFile:
+        ret.append(data[m-1])
+    file.close()
+    
+    # calculate stack size
+    stack_size = int(data[27]) - int(data[29])
+    del(ret[7])
+    del(ret[7])
+    ret.append(str(stack_size))
+    return ret
+    
+def getIOStats(pid):
+    filename = os.path.join('/proc', str(pid), 'io')
+    file = open(filename, 'r')
+    data = file.readlines()
+    
+    ret = []
+    ret.append(data[0].split()[1])
+    ret.append(data[1].split()[1])
+    ret.append(data[4].split()[1])
+    ret.append(data[5].split()[1])
+    ret.append(data[6].split()[1])
+    
+    file.close()
+    return ret
 
 # Get number of open file descriptors
 def getNumberOfFDs(pid):
@@ -88,35 +150,38 @@ def getNumberOfFDs(pid):
     return str(len(out.stdout.readlines()))
 
 # Get number of threads
-def getNumberOfThreads(pid):
-    n = 0
-    p = '/proc/' + str(pid) + '/status'
-    try:
-        fd = open(p, 'r')
-        for l in fd.readlines():
-            if 'Threads:' in l:
-                n = l.split()[1]
-                break;
-    except IOError:
-        n = 0
-    return n
+#def getNumberOfThreads(pid):
+#    n = 0
+#    p = '/proc/' + str(pid) + '/status'
+#    try:
+#        fd = open(p, 'r')
+#        for l in fd.readlines():
+#            if 'Threads:' in l:
+#                n = l.split()[1]
+#                break;
+#    except IOError:
+#        n = 0
+#    return n
 
 def getMetrics(pid):
-    ret = getSysStatMetrics(pid)
+    #ret = getSysStatMetrics(pid)
+    ret = getStatFileMetrics(pid)
+    ret.extend(getIOStats(pid))
     ret.append(getNumberOfFDs(pid))
-    ret.append(getNumberOfThreads(pid))
+    #ret.append(getNumberOfThreads(pid))
     return ret
 
 def getFeatures():
-    cmd = ['pidstat','-p',str(os.getpid()),'-h','-d',
-           '-u','-I','-r','-s','-w','1','1']
-    out = subprocess.Popen(cmd,stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    lines = out.stdout.readlines()
-    values = lines[len(lines)-2].split()
-    del values[0]
-    values.append('FDs') # Add number of fds
-    values.append('NumThreads') # Add number of threads
-    return values
+#    cmd = ['pidstat','-p',str(os.getpid()),'-h','-d',
+#           '-u','-I','-r','-s','-w','1','1']
+#    out = subprocess.Popen(cmd,stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+#    lines = out.stdout.readlines()
+#    values = lines[len(lines)-2].split()
+#    del values[0]
+    features = ('minflt','majflt','utime','stime','num_threads','vsize','rss',
+                'processor','stack_size','rchar','wchar','read_bytes',
+                'write_bytes','cancelled_write_bytes','num_file_desc')
+    return features
 
 #def programIsAlive(pid):
 #    cmd = ['ps','-o','pid','--no-headers',str(pid)]
@@ -183,7 +248,7 @@ for n in range(numberOfSamples):
             valuesList = getMetrics(c)
             saveMetricValues(c, data, valuesList)
     
-    time.sleep(float(rate)-1)
+    time.sleep(float(rate))
 
 # Wait until the program finishes
 if mode is "CREATE_PROCESS":
