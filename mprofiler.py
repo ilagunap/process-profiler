@@ -38,8 +38,8 @@ def parseOptions():
                       help="Output directory.", metavar="DIR")
     parser.add_option("-n", "--samples-number", dest="num", 
                       help="Number of samples. Default is 10.")
-    parser.add_option("-p", "--pid", dest="PID",
-                      help="Process ID.")
+    parser.add_option("-p", "--pids", dest="PID",
+                      help="Process IDs. Use comma to separate different PIDs.\nExample: -p 26,22")
     parser.add_option("-i", "--nic", dest="NIC",
                       help="Network interface card (NIC). Default is 'eth0'.")
     
@@ -57,13 +57,13 @@ def getSamplingRate(options):
         rate = options.rate
     return rate
 
-def getProcessID(options):
+def getProcessIDs(options):
+    ret = []
     if options.PID is None:
-        pid = 0
+        ret.append(0)
     else:
-        pid = options.PID
-    
-    return pid
+        ret = options.PID.split(",")
+    return ret
 
 nic = 'eth0'
 def setNIC(options):
@@ -77,6 +77,14 @@ def setNIC(options):
         
 def processExist(pid):
     return os.path.exists("/proc/" + str(pid))
+
+def allProcessesDied(pids):
+    ret = True
+    for p in pids:
+        if processExist(p):
+            ret = False
+            break
+    return ret
 
 def getNumberOfSamples(options):
     if options.num is None:
@@ -103,6 +111,7 @@ def getChilds(pid):
     return lines
 
 # Metrics names:
+# 2: program name
 # 10: minflt (minor faults) 
 # 12: majflt (major faults)
 # 14: utime (user-mode CPU time)
@@ -113,7 +122,7 @@ def getChilds(pid):
 # 28: startstack (address of bottom of the stack)
 # 30: kstkeip (current EIP; instruction pointer)
 # 39: processor (CPU number last executed on)
-metricsInStatFile = (10,12,14,15,20,23,24,28,30,39);
+metricsInStatFile = (2,10,12,14,15,20,23,24,28,30,39);
 
 def getStatFileMetrics(pid):
     global metricsInStatFile
@@ -127,8 +136,8 @@ def getStatFileMetrics(pid):
     
     # Calculate stack size
     stack_size = int(data[27]) - int(data[29])
-    del(ret[7])
-    del(ret[7])
+    del(ret[8])
+    del(ret[8])
     ret.append(str(stack_size))
     
     return ret
@@ -198,7 +207,7 @@ def getMetrics(pid):
     return ret
 
 def getFeatures():
-    features = ('Timestamp','PID','minflt','majflt','utime','stime',
+    features = ('Timestamp','PID','Program','minflt','majflt','utime','stime',
                 'num_threads','vsize','rss',
                 'processor','stack_size','rchar','wchar','read_bytes',
                 'write_bytes','canceled_write_bytes','num_file_desc',
@@ -248,8 +257,8 @@ def main():
     setNIC(options)
     features = getFeatures()
 
-    pid = getProcessID(options)
-    if (pid != 0):
+    pids = getProcessIDs(options)
+    if (pids[0] != 0):
         mode = "ATTACH_PROCESS"
     else:
         mode = "CREATE_PROCESS"
@@ -259,10 +268,10 @@ def main():
         argsList = args[0].split()
         log('Calling main program...')
         program = subprocess.Popen(argsList)
-        pid = str(program.pid)
-        log('Main program has PID ' + pid)
+        pids[0] = str(program.pid)
+        log('Main program has PID ' + pids[0])
     else:
-        log('Program has PID ' + pid)
+        log("Programs' PIDs are: " + ', '.join(pids))
 
     # Data hash table. Keys: pids; Values: lists of metric values.
     data = {}
@@ -274,17 +283,19 @@ def main():
             if program.returncode != None:
                 break
         else:
-            if not processExist(pid):
+            #if not processExist(pid):
+            if allProcessesDied(pids):
                 break
     
-        valuesList = getMetrics(pid)
-        saveMetricValues(pid, data, valuesList)
+        for pid in pids:
+            valuesList = getMetrics(pid)
+            saveMetricValues(pid, data, valuesList)
     
-        listOfChilds = getChilds(pid)
-        if len(listOfChilds) != 0:
-            for c in listOfChilds:
-                valuesList = getMetrics(c)
-                saveMetricValues(c, data, valuesList)
+            listOfChilds = getChilds(pid)
+            if len(listOfChilds) != 0:
+                for c in listOfChilds:
+                    valuesList = getMetrics(c)
+                    saveMetricValues(c, data, valuesList)
     
         time.sleep(float(rate))
 

@@ -27,17 +27,19 @@ Options:
   -d DIR, --dir=DIR     Output directory.
   -n NUM, --samples-number=NUM
                         Number of samples. Default is 10.
-  -p PID, --pid=PID     Process ID.
+  -p PID, --pids=PID    Process IDs. Use comma to separate different PIDs.
+                        Example: -p 26,22
   -i NIC, --nic=NIC     Network interface card (NIC). Default is 'eth0'.
 
 Operation modes
 ---------------
 There are two operation modes:
-(a)  Using an already existing process (with the '-p' option)
+(a)  Using an already existing process (or a comma-separated set of processes) 
+with the '-p' option.
 (b)  Creating the program to monitor (by passing the program as an argument)
 
 Mode (a) has precedence over (b), i.e. if '-p' is used, a program passed as
-an argument will not be created (and it will only monitor the process with the
+an argument will not be created (and it will only monitor the processes with the
 PID passed with '-p'). If '-p' is not used, you must pass the program to monitor
 as an argument. See the example below for mode (b).
 
@@ -64,7 +66,7 @@ Example
 In the following example we use the profiler to get measurements of the 'find'
 program in Linux:
 
-$ ./profiler.py -s 1 -n 1000 "find /usr -name data.txt"
+$ ./mprofiler.py -s 1 -n 1000 "find /usr -name data.txt"
 [PROFILER]: Calling main program...
 [PROFILER]: Main program has PID 3484
 ......
@@ -96,8 +98,9 @@ name of the performance metrics.
 
 Metric descriptions
 -------------------
-Timestamp:  timestamp of the measrument
+Timestamp:  timestamp of the measurement
 PID: process id
+Program: program name (as it is stored in the /proc/PID/stat file)
 minflt: minor page faults
 majflt: major page faults
 utime: user-level CPU time
@@ -105,14 +108,14 @@ stime: system-level CPU time
 num_threads: number of threads
 vsize: virtual memory size
 rss: RAM memory
-processor: processor id the process is currently running at
+processor: CPU number last executed on
 stack_size: size of the stack
 rchar: read characters
 wchar: written characters
 read_bytes: read bytes
 write_bytes: written bytes
 canceled_write_bytes: canceled written bytes
-num_file_desc: nmber of open file descriptors (including sockets)
+num_file_desc: number of open file descriptors (including sockets)
 nicRcvBytes: received bytes from NIC
 nicRcvPckts: received packets from NIC
 nicSentBytes: sent bytes from NIC
