@@ -127,34 +127,41 @@ metricsInStatFile = (2,10,12,14,15,20,23,24,28,30,39);
 def getStatFileMetrics(pid):
     global metricsInStatFile
     filename = os.path.join('/proc', str(pid), 'stat')
-    file = open(filename, 'r')
-    data = file.readlines()[-1:][0].split(" ")
-    ret = []
-    for m in metricsInStatFile:
-        ret.append(data[m-1])
-    file.close()
+    try:
+        file = open(filename, 'r')
+        data = file.readlines()[-1:][0].split(" ")
+        ret = []
+        for m in metricsInStatFile:
+            ret.append(data[m-1])
+        file.close()
     
-    # Calculate stack size
-    stack_size = int(data[27]) - int(data[29])
-    del(ret[8])
-    del(ret[8])
-    ret.append(str(stack_size))
+        # Calculate stack size
+        stack_size = int(data[27]) - int(data[29])
+        del(ret[8])
+        del(ret[8])
+        ret.append(str(stack_size))
+    except IOError:
+        ret = [0,0,0,0,0,0,0,0,0,0]
     
     return ret
     
 def getIOStats(pid):
     filename = os.path.join('/proc', str(pid), 'io')
-    file = open(filename, 'r')
-    data = file.readlines()
+    try:
+        file = open(filename, 'r')
+        data = file.readlines()
     
-    ret = []
-    ret.append(data[0].split()[1])
-    ret.append(data[1].split()[1])
-    ret.append(data[4].split()[1])
-    ret.append(data[5].split()[1])
-    ret.append(data[6].split()[1])
+        ret = []
+        ret.append(data[0].split()[1])
+        ret.append(data[1].split()[1])
+        ret.append(data[4].split()[1])
+        ret.append(data[5].split()[1])
+        ret.append(data[6].split()[1])
     
-    file.close()
+        file.close()
+    except IOError:
+        ret = [0,0,0,0,0]
+        
     return ret
 
 # Get number of open file descriptors
@@ -170,30 +177,36 @@ def getNetworkStats(pid):
     
     # Read data from /proc/PID/net/dev
     filename = os.path.join('/proc', str(pid), 'net', 'dev')
-    file = open(filename, 'r')
-    data = file.readlines()
-    foundNIC = False
-    for l in data:
-        val = l.split()
-        if val[0] == (nic + ':'):
-            foundNIC = True
-            ret.append(val[1])
-            ret.append(val[2])
-            ret.append(val[9])
-            ret.append(val[10]) 
+    try:
+        file = open(filename, 'r')
+        data = file.readlines()
+        foundNIC = False
+        for l in data:
+            val = l.split()
+            if val[0] == (nic + ':'):
+                foundNIC = True
+                ret.append(val[1])
+                ret.append(val[2])
+                ret.append(val[9])
+                ret.append(val[10]) 
     
-    if not foundNIC:
-        handleError('incorrect NIC')
-    file.close()
+        if not foundNIC:
+            handleError('incorrect NIC')
+        file.close()
+    except IOError:
+        ret = [0,0,0,0]
     
     # Read data from /proc/PID/net/netstat
     filename = os.path.join('/proc', str(pid), 'net', 'netstat')
-    file = open(filename, 'r')
-    data = file.readlines()[-1:][0].split()
-    ret.append(data[2]) # InTruncatedPkts
-    ret.append(data[7]) # InOctets
-    ret.append(data[8]) # OutOctets
-    file.close()
+    try:
+        file = open(filename, 'r')
+        data = file.readlines()[-1:][0].split()
+        ret.append(data[2]) # InTruncatedPkts
+        ret.append(data[7]) # InOctets
+        ret.append(data[8]) # OutOctets
+        file.close()
+    except IOError:
+        ret.extend([0,0,0])
     
     return ret
 
